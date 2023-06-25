@@ -5,6 +5,7 @@
 //  Created by Rishav Gupta on 24/06/23.
 //
 
+import MapKit
 import SwiftUI
 
 struct User: Identifiable, Comparable { // Data Model - we do not tell the model how to sort itself
@@ -39,6 +40,12 @@ struct FailedView: View {
     }
 }
 
+struct Location: Identifiable {
+    let id = UUID()
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+}
+
 struct ContentView: View {
     let users = [
         User(firstName: "Arnold", lastName: "Rimmer"),
@@ -60,33 +67,59 @@ struct ContentView: View {
     
     var loadingState = LoadingState.loading
     
+    @State private var mapRegion = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.5, longitude: -0.12), span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2))
+    
+    let locations = [
+        Location(name: "Buckingham Palace", coordinate: CLLocationCoordinate2D(latitude: 51.501, longitude: -0.141)),
+        Location(name: "Tower of London", coordinate: CLLocationCoordinate2D(latitude: 51.508, longitude: -0.076))
+    ]
+    
     var body: some View {
-        VStack {
-            List(users) { user in
-                Text("\(user.firstName) \(user.lastName)")
-            }
-            
-            Text("Hello World!")
-                .onTapGesture {
-                    let str = "Test Message"
-                    let url = getDocumentsDirectory().appendingPathComponent("message.txt")
-                    
-                    do {
-                        try str.write(to: url, atomically: true, encoding: .utf8)
+        NavigationView {
+            VStack {
+                List(users) { user in
+                    Text("\(user.firstName) \(user.lastName)")
+                }
+                
+                Text("Hello World!")
+                    .onTapGesture {
+                        let str = "Test Message"
+                        let url = getDocumentsDirectory().appendingPathComponent("message.txt")
                         
-                        let input = try String(contentsOf: url)
-                        print(input)
-                    } catch {
-                        print(error.localizedDescription)
+                        do {
+                            try str.write(to: url, atomically: true, encoding: .utf8)
+                            
+                            let input = try String(contentsOf: url)
+                            print(input)
+                        } catch {
+                            print(error.localizedDescription)
+                        }
+                    }
+                switch loadingState {
+                case .loading:
+                    LoadingView()
+                case .success:
+                    SuccessView()
+                case .failed:
+                    FailedView()
+                }
+                
+                
+                Map(coordinateRegion: $mapRegion, annotationItems: locations) { location in
+                    //                MapMarker(coordinate: location.coordinate)
+                    MapAnnotation(coordinate: location.coordinate) {
+                        NavigationLink {
+                            Text(location.name)
+                        } label: {
+                            Circle()
+                                .stroke(.red, lineWidth: 3)
+                                .frame(width: 44, height: 44)
+                                .onTapGesture {
+                                    print("Tapped on \(location.name)")
+                                }
+                        }
                     }
                 }
-            switch loadingState {
-            case .loading:
-                LoadingView()
-            case .success:
-                SuccessView()
-            case .failed:
-                FailedView()
             }
         }
     }
