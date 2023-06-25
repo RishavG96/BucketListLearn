@@ -5,6 +5,7 @@
 //  Created by Rishav Gupta on 24/06/23.
 //
 
+import LocalAuthentication
 import MapKit
 import SwiftUI
 
@@ -74,6 +75,9 @@ struct ContentView: View {
         Location(name: "Tower of London", coordinate: CLLocationCoordinate2D(latitude: 51.508, longitude: -0.076))
     ]
     
+    
+    @State private var isUnlocked = false
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -120,7 +124,14 @@ struct ContentView: View {
                         }
                     }
                 }
+                
+                if isUnlocked {
+                    Text("Unlocked")
+                } else {
+                    Text("Locked")
+                }
             }
+            .onAppear(perform: authenticate)
         }
     }
     
@@ -132,6 +143,27 @@ struct ContentView: View {
     // Atomic writing - Write all at once - System writes out the whole file to a temp file name and then in one go - renames it
     // objc - utf16 encoding
     // stift native encoding - utf8
+    
+    
+    func authenticate() {
+        let context = LAContext()
+        // Make an empty error, and pass it into the func, if the error is returned empty then there was no error
+        var error: NSError?
+        
+        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+            let reason = "We need to unlock your data."
+            
+            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authenticationError in
+                if success {
+                    isUnlocked = true
+                } else {
+                    // problem
+                }
+            }
+        } else {
+            // no biometrics
+        }
+    }
 }
 
 struct ContentView_Previews: PreviewProvider {
